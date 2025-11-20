@@ -1,0 +1,15 @@
+services:
+  dashboard:
+    build: .
+    container_name: medical_dashboard
+    ports:
+      - "8001:8001"
+    environment:
+      - DEBUG=True
+    networks:
+      - medical_network
+
+networks:
+  medical_network:
+    external: true
+    name: app_with_postgres_2_medical_network

@@ -1,2 +1,10 @@
+# Core Django
 Django==5.2.8
 psycopg2-binary==2.9.11
+
+# Production
+gunicorn==21.2.0
+whitenoise==6.6.0
+
+# Development
+python-dotenv==1.0.0

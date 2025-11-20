@@ -7,29 +7,27 @@ from datetime import datetime, timedelta
 @staff_member_required
 def dashboard_stats(request):
     """Dashboard with medical statistics"""
+    from django.db import connection
     
-    # Basic counts
-    total_doctors = Doctor.objects.count()
-    total_patients = User.objects.filter(role='user').count()
-    total_appointments = Appointment.objects.count()
-    total_rooms = Room.objects.count()
+    # Оптимизированный запрос для всех счетчиков одновременно
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT 
+                (SELECT COUNT(*) FROM doctors) as total_doctors,
+                (SELECT COUNT(*) FROM users WHERE role = 'user') as total_patients,
+                (SELECT COUNT(*) FROM appointments) as total_appointments,
+                (SELECT COUNT(*) FROM rooms) as total_rooms,
+                (SELECT COUNT(*) FROM appointments WHERE datetime >= %s) as recent_appointments,
+                (SELECT COUNT(*) FROM appointments WHERE DATE(datetime) = %s) as today_appointments
+        """, [datetime.now() - timedelta(days=7), datetime.now().date()])
+        
+        row = cursor.fetchone()
+        total_doctors, total_patients, total_appointments, total_rooms, recent_appointments, today_appointments = row
     
-    # Recent appointments (last 7 days)
-    week_ago = datetime.now() - timedelta(days=7)
-    recent_appointments = Appointment.objects.filter(
-        datetime__gte=week_ago
-    ).count()
-    
-    # Popular specializations
+    # Popular specializations (оставляем ORM для читаемости)
     specializations = Doctor.objects.values('specialization').annotate(
         count=Count('specialization')
     ).order_by('-count')[:5]
-    
-    # Today's appointments
-    today = datetime.now().date()
-    today_appointments = Appointment.objects.filter(
-        datetime__date=today
-    ).count()
     
     context = {
         'total_doctors': total_doctors,

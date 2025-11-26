@@ -12,7 +12,8 @@ def dashboard_stats(request):
 
     # Оптимизированный запрос для всех счетчиков одновременно
     with connection.cursor() as cursor:
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT
                 (SELECT COUNT(*) FROM doctors) as total_doctors,
                 (SELECT COUNT(*) FROM users WHERE role = 'user')
@@ -23,25 +24,35 @@ def dashboard_stats(request):
                     as recent_appointments,
                 (SELECT COUNT(*) FROM appointments WHERE DATE(datetime) = %s)
                     as today_appointments
-        """, [datetime.now() - timedelta(days=7), datetime.now().date()])
+        """,
+            [datetime.now() - timedelta(days=7), datetime.now().date()],
+        )
 
         row = cursor.fetchone()
-        (total_doctors, total_patients, total_appointments, total_rooms,
-         recent_appointments, today_appointments) = row
+        (
+            total_doctors,
+            total_patients,
+            total_appointments,
+            total_rooms,
+            recent_appointments,
+            today_appointments,
+        ) = row
 
     # Popular specializations (оставляем ORM для читаемости)
-    specializations = Doctor.objects.values('specialization').annotate(
-        count=Count('specialization')
-    ).order_by('-count')[:5]
+    specializations = (
+        Doctor.objects.values("specialization")
+        .annotate(count=Count("specialization"))
+        .order_by("-count")[:5]
+    )
 
     context = {
-        'total_doctors': total_doctors,
-        'total_patients': total_patients,
-        'total_appointments': total_appointments,
-        'total_rooms': total_rooms,
-        'recent_appointments': recent_appointments,
-        'today_appointments': today_appointments,
-        'specializations': specializations,
+        "total_doctors": total_doctors,
+        "total_patients": total_patients,
+        "total_appointments": total_appointments,
+        "total_rooms": total_rooms,
+        "recent_appointments": recent_appointments,
+        "today_appointments": today_appointments,
+        "specializations": specializations,
     }
 
-    return render(request, 'dashboard/stats.html', context)
+    return render(request, "dashboard/stats.html", context)
